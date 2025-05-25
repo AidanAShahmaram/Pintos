@@ -19,8 +19,8 @@ struct child_status *child_status_create() {
   return cs;
 }
 
-void set_child_tid(struct child_status *cs){
-  cs->child_tid = thread_current()->tid;
+void set_child_tid(struct child_status *cs, int tid){
+  cs->child_tid = tid;
 }
   
 
@@ -37,7 +37,7 @@ void child_status_exit(struct child_status *cs, int exit_code) {
 int child_status_wait(struct child_status *cs) {
   sema_down(&cs->exit_sema);
   int exit_code = cs->exit_code;
-  list_remove(cs->elem);
+  list_remove(&cs->elem);
   child_status_release(cs); // Drop parent's reference
   return exit_code;
 }

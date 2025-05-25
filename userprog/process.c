@@ -1,4 +1,4 @@
-#include "userprog/process.h"
+#include "userprog/process.h"A
 
 #include <debug.h>
 #include <inttypes.h>
@@ -26,11 +26,6 @@ static struct semaphore temporary;
 static thread_func start_process NO_RETURN;
 static bool load(const char *cmdline, void (**eip)(void), void **esp);
 
-
-struct start_proc_args{
-  char *file_name;
-  struct child_status *wait_struct;
-};
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -60,14 +55,13 @@ tid_t process_execute(const char *file_name) {
     
     char *save_ptr;
     char *program_name = strtok_r(file_name, " ", &save_ptr);
-    struct start_args *process_args = malloc(sizeof(struct start_args));
 
 
     struct child_status *cs = child_status_create(tid);
-    list_push_back(&thread_current()->child_status_list, &cs->elem);
+    list_push_back(&thread_current()->self_to_children, &cs->elem);
 
 
-    struct start_proc_args *spargs = malloc(sizeof(struct start_proc_args));
+    struct start_proc_args *spargs = malloc(sizeof(*spargs));
     spargs->wait_struct = cs;
     spargs->file_name = file_name;
     
@@ -86,13 +80,14 @@ tid_t process_execute(const char *file_name) {
 
 /* A thread function that loads a user process and starts it
    running. */
-static void start_process(void *func_args) {
-  char *file_name = func_args->file_name;
+static void start_process(void *func_args) {  
+  struct start_proc_args *cast_args = (struct start_proc_args *)func_args;
+  char *file_name = cast_args->file_name;
   struct intr_frame if_;
   bool success;
 
-    set_child_tid(func_args->wait_struct);
-    thread_current()->my_status = func_args->wait_struct;
+  set_child_tid(cast_args->wait_struct, thread_current());
+    thread_current()->self_to_parent = cast_args->wait_struct;
 
     /* Initialize interrupt frame and load executable. */
     memset(&if_, 0, sizeof if_);
@@ -109,7 +104,7 @@ static void start_process(void *func_args) {
         thread_exit();*/
 
     //add wait struct to thread struct
-    thread_current()->my_status = func_args->wait_struct;
+
     if(success){
         char *argv[MAX_ARGS];
         void *arg_ptrs[MAX_ARGS];

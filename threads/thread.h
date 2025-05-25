@@ -7,6 +7,7 @@
 
 #include "threads/fixed-point.h"
 #include "threads/synch.h"
+#include "userprog/wait.h"
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -98,14 +99,13 @@ struct thread {
 #ifdef USERPROG
   /* Owned by userprog/process.c. */
 #include "lib/kernel/list.h"
-#include "userprog/wait.h"
   
   uint32_t *pagedir; /* Page directory. */
   struct list fd_list;
   int next_fd_num;
 
   struct list self_to_children;
-  struct child_status *parent_to_self;
+  struct child_status *self_to_parent;
 #endif
   
   /* Owned by thread.c. */

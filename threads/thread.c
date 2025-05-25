@@ -418,8 +418,8 @@ static void init_thread(struct thread *t, const char *name, int priority) {
     list_init(&t->fd_list);
     t->next_fd_num = 2;
 
-    list_init(&t->child_status_list);
-    t->my_status = NULL;
+    list_init(&t->self_to_children);
+    t->self_to_parent = NULL;
 
     old_level = intr_disable();
     list_push_back(&all_list, &t->allelem);

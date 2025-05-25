@@ -134,7 +134,7 @@ void sys_close(int fd){
   lock_release(&filesys_lock);
 }
 
-pid_t sys_exec(const char *cmd_line){
+int sys_exec(const char *cmd_line){
   /*create new proces*/
   validate_user_ptr(cmd_line);
   char *input = palloc_get_page(0);

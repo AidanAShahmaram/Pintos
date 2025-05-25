@@ -6,7 +6,7 @@
 #include "threads/thread.h"
 
 struct child_status {
-  tid_t child_tid;
+  int child_tid;
   int exit_code;
   bool has_exited;
 
@@ -30,5 +30,7 @@ int child_status_wait(struct child_status *cs);
 
 /* Releases a reference to the struct and frees it if no longer in use. */
 void child_status_release(struct child_status *cs);
+
+void set_child_tid(struct child_status *cs, int tid);
 
 #endif /* USERPROG_WAIT_H */
