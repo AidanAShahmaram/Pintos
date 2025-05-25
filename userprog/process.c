@@ -55,8 +55,8 @@ tid_t process_execute(const char *file_name) {
     strlcpy(file_name_copy, file_name, PGSIZE);
     /* Create a new thread to execute FILE_NAME. */
     
-    //char *save_ptr;
-    //char *program_name = strtok_r(file_name, " ", &save_ptr);
+    char *save_ptr;
+    char *program_name = strtok_r(file_name, " ", &save_ptr);
     //struct start_args *process_args = malloc(sizeof(struct start_args));
 
 
@@ -73,14 +73,11 @@ tid_t process_execute(const char *file_name) {
     
     tid = thread_create(file_name, PRI_DEFAULT, start_process, spargs);
 
-    //fix this so that it is added to the parent's list, not child's
-    if (tid == TID_ERROR) {
-      palloc_free_page(fn_copy);
-      palloc_free_page(file_name_copy);
-      return TID_ERROR;
-    }
-    
     palloc_free_page(file_name_copy);
+
+    if (tid == TID_ERROR){
+      palloc_free_page(fn_copy);
+    }
     return tid;
 }
 
