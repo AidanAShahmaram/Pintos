@@ -20,6 +20,7 @@
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
 #include "userprog/tss.h"
+#include "userprog/wait.h"
 #define MAX_ARGS 32
 
 static struct semaphore temporary;
@@ -171,10 +172,10 @@ static void start_process(void *func_args) {
         if_.esp -= sizeof(void *);
         *(void **) if_.esp = 0;
 
-        palloc_free_page(file_name);
+        //palloc_free_page(file_name);
 	
     }else{
-        palloc_free_page(file_name);
+      //palloc_free_page(file_name);
         thread_exit();
     }
     
@@ -198,9 +199,9 @@ static void start_process(void *func_args) {
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
-int process_wait(tid_t child_tid UNUSED) {
-    sema_down(&temporary);
-    return 0;}
+int process_wait(tid_t child_tid) {
+  return child_status_wait(find_child_status(thread_current(), child_tid));
+}
 
 /* Free the current process's resources. */
 void process_exit(void) {
