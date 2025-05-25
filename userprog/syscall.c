@@ -54,7 +54,9 @@ void sys_exit(int code){
   if(cur->self_to_parent != NULL){
     child_status_exit(cur->self_to_parent, code);
   }
+  lock_acquire(&filesys_lock);
   thread_exit();  // Does not return
+  lock_release(&filesys_lock);
 }
 
 int sys_open(const char *file){
@@ -152,17 +154,20 @@ void sys_close(int fd){
 
 int sys_exec(const char *cmd_line){
   /*create new proces*/
+  lock_acquire(&filesys_lock);
   if(!validate_user_string(cmd_line)){
     sys_exit(-1);
   }
   char *input = palloc_get_page(0);
   size_t len = strlen(cmd_line) + 1;
   if(input == NULL){
+    lock_release(&filesys_lock);
     return -1;
   }
   
   strlcpy(input, cmd_line, PGSIZE);
   tid_t child = process_execute(input);
+  lock_release(&filesys_lock);
   return child;
 }
 
