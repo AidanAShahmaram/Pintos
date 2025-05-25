@@ -69,3 +69,14 @@ struct child_status *find_child_status(struct thread *parent, tid_t child_tid){
   }
   return NULL; //Child not found
 }
+struct child_status {
+  int child_tid;
+  int exit_code;
+  bool has_exited;
+
+  int ref_count;
+  struct lock ref_lock;
+  struct semaphore exit_sema;
+
+  struct list_elem elem; // To be used in parent->children list                                                                                                                    
+};
