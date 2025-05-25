@@ -35,6 +35,9 @@ void child_status_exit(struct child_status *cs, int exit_code) {
 
 /* Called by parent to wait on the child. */
 int child_status_wait(struct child_status *cs) {
+  if(cs == NULL){
+    return -1;
+  }
   sema_down(&cs->exit_sema);
   int exit_code = cs->exit_code;
   list_remove(&cs->elem);
