@@ -57,13 +57,20 @@ tid_t process_execute(const char *file_name) {
     char *program_name = strtok_r(file_name, " ", &save_ptr);
 
 
-    struct child_status *cs = child_status_create(tid);
+    /* struct child_status *cs = child_status_create();
     list_push_back(&thread_current()->self_to_children, &cs->elem);
+    struct child_struct *son = find_child_status(thread_current(), child_tid);
+    if(son == NULL){
+      return -1;
+      }*/
 
 
     struct start_proc_args *spargs = malloc(sizeof(*spargs));
-    spargs->wait_struct = cs;
+    spargs->par = thread_current();
     spargs->file_name = file_name;
+    struct semaphore sem_load;
+    sema_init (&sem_load, 0);
+    spargs->sem_luv = &sem_load;
     
     tid = thread_create(file_name, PRI_DEFAULT, start_process, spargs);
 
@@ -73,6 +80,8 @@ tid_t process_execute(const char *file_name) {
       palloc_free_page(file_name_copy);
       return TID_ERROR;
     }
+    sema_down(&sem_load);
+    
     
     palloc_free_page(file_name_copy);
     return tid;
@@ -86,8 +95,10 @@ static void start_process(void *func_args) {
   struct intr_frame if_;
   bool success;
 
-  set_child_tid(cast_args->wait_struct, thread_current());
-    thread_current()->self_to_parent = cast_args->wait_struct;
+  struct child_status *cs = child_status_create();
+  list_push_back(&cast_args->par->self_to_children, &cs->elem);
+  set_child_tid(cs, thread_current());
+  thread_current()->self_to_parent = cs;
 
     /* Initialize interrupt frame and load executable. */
     memset(&if_, 0, sizeof if_);
@@ -171,12 +182,15 @@ static void start_process(void *func_args) {
         if_.esp -= sizeof(void *);
         *(void **) if_.esp = 0;
 
-        palloc_free_page(file_name);
+        //palloc_free_page(file_name);
 	
     }else{
-        palloc_free_page(file_name);
+      //palloc_free_page(file_name);
+      sema_up(cast_args->sem_luv);
         thread_exit();
     }
+
+    sema_up(cast_args->sem_luv); 
     
 
     /* Start the user process by simulating a return from an
@@ -198,9 +212,13 @@ static void start_process(void *func_args) {
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
-int process_wait(tid_t child_tid UNUSED) {
-    sema_down(&temporary);
-    return 0;}
+int process_wait(tid_t child_tid) {
+  struct child_struct *son = find_child_status(thread_current(), child_tid);
+  /*if(son == NULL){
+    return -1;
+    }*/
+  return child_status_wait(son);
+}
 
 /* Free the current process's resources. */
 void process_exit(void) {
@@ -222,7 +240,7 @@ void process_exit(void) {
         pagedir_activate(NULL);
         pagedir_destroy(pd);
     }
-    sema_up(&temporary);
+    child_status_exit(thread_current()->self_to_parent, thread_current()->exit_status);
 }
 
 /* Sets up the CPU for running user code in the current

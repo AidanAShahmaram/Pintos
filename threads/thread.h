@@ -106,6 +106,7 @@ struct thread {
 
   struct list self_to_children;
   struct child_status *self_to_parent;
+  int exit_status;
 #endif
   
   /* Owned by thread.c. */

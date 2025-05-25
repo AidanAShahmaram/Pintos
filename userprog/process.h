@@ -5,7 +5,8 @@
 
 struct start_proc_args{
   char *file_name;
-  struct child_status *wait_struct;
+  struct thread *par;
+  struct semaphore *sem_luv;
 };
 
 tid_t process_execute(const char *file_name);

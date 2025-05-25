@@ -33,4 +33,6 @@ void child_status_release(struct child_status *cs);
 
 void set_child_tid(struct child_status *cs, int tid);
 
+struct child_status *find_child_status(struct thread *parent, int child_tid);
+
 #endif /* USERPROG_WAIT_H */

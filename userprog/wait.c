@@ -53,3 +53,15 @@ void child_status_release(struct child_status *cs) {
     free(cs);
   }
 }
+
+
+struct child_status *find_child_status(struct thread *parent, int child_tid){
+  struct list_elem *e;
+  for(e = list_begin(&parent->self_to_children); e != list_end(&parent->self_to_children); e = list_next(e)){
+    struct child_status *cs = list_entry(e, struct child_status, elem);
+    if(cs->child_tid == child_tid){
+      return cs;
+    }
+  }
+  return NULL; //Child not found
+}
