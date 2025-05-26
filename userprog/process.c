@@ -57,8 +57,10 @@ tid_t process_execute(const char *file_name) {
     char *program_name = strtok_r(file_name, " ", &save_ptr);
 
 
+    struct child_status *cs = child_status_create();
+
     struct start_proc_args *spargs = malloc(sizeof(*spargs));
-    spargs->par = thread_current();
+    spargs->cs = cs;
     spargs->file_name = fn_copy;
     struct semaphore sem_load;
     sema_init (&sem_load, 0);
@@ -73,7 +75,8 @@ tid_t process_execute(const char *file_name) {
       return TID_ERROR;
     }
     sema_down(&sem_load);
-    
+
+    list_push_back(&thread_current()->self_to_children, &cs->elem);
     
     palloc_free_page(file_name_copy);
     return tid;
@@ -87,10 +90,8 @@ static void start_process(void *func_args) {
   struct intr_frame if_;
   bool success;
   
-  struct child_status *cs = child_status_create();
-  list_push_back(&cast_args->par->self_to_children, &cs->elem);
-  set_child_tid(cs, thread_current());
-  thread_current()->self_to_parent = cs;
+  set_child_tid(cast_args->cs, thread_current()->tid);
+  thread_current()->self_to_parent = cast_args->cs;
 
     /* Initialize interrupt frame and load executable. */
     memset(&if_, 0, sizeof if_);
@@ -205,10 +206,13 @@ static void start_process(void *func_args) {
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int process_wait(tid_t child_tid) {
+  if(child_tid == thread_current()->tid){
+    return 1;
+  }
   struct child_struct *son = find_child_status(thread_current(), child_tid);
-  if(son == NULL){
+  /*if(son == NULL){
     return -1;
-    }
+    }*/
   return child_status_wait(son);
 }
 
