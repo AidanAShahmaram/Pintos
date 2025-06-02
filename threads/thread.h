@@ -97,9 +97,15 @@ struct thread {
   
 #ifdef USERPROG
   /* Owned by userprog/process.c. */
+#include "lib/kernel/list.h"
+#include "userprog/wait.h"
+  
   uint32_t *pagedir; /* Page directory. */
   struct list fd_list;
   int next_fd_num;
+
+  struct list child_status_list;
+  struct child_status *my_status;
 #endif
   
   /* Owned by thread.c. */
