@@ -26,6 +26,10 @@ static struct semaphore temporary;
 static thread_func start_process NO_RETURN;
 static bool load(const char *cmdline, void (**eip)(void), void **esp);
 
+struct start_args{
+    char *file_name;
+    struct child_status *cstatus_ptr;
+}
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -54,8 +58,22 @@ tid_t process_execute(const char *file_name) {
     
     char *save_ptr;
     char *program_name = strtok_r(file_name, " ", &save_ptr);
+    struct start_args *process_args = malloc(sizeof(struct start_args));
 
-    tid = thread_create(file_name, PRI_DEFAULT, start_process, fn_copy);
+    /* create child_status struct */
+    struct thread parent_thread = thread_current();
+    struct child_status *cs = create_child_status(-1);
+    if(cs = NULL){
+        free(args);
+        palloc_free_page(fn_copy);
+        return TID_ERROR
+    }
+
+    tid = thread_create(file_name, PRI_DEFAULT, start_process, start_args);
+
+    cs->child_tid = tid;
+    push_front(parent_thread->self_to_children, child_status->elem);
+    thread_current()->parent_to_self = cs;
 
     palloc_free_page(file_name_copy);
 
@@ -67,7 +85,7 @@ tid_t process_execute(const char *file_name) {
 /* A thread function that loads a user process and starts it
    running. */
 static void start_process(void *file_name_) {
-    char *file_name = file_name_;
+    char *file_name = file_name_->file_name;
     struct intr_frame if_;
     bool success;
 
@@ -155,7 +173,7 @@ static void start_process(void *file_name_) {
         palloc_free_page(file_name);
         thread_exit();
     }
-
+    
 
     /* Start the user process by simulating a return from an
        interrupt, implemented by intr_exit (in

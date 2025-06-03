@@ -134,6 +134,19 @@ void sys_close(int fd){
   lock_release(&filesys_lock);
 }
 
+pid_t sys_exec(const char *cmd_line){
+  /*create new proces*/
+  validate_user_ptr(cmd_line);
+  char *input = palloc_get_page(0);
+  size_t len = strlen(cmd_line) + 1;
+  if(input == NULL){
+    return -1;
+  }
+  strlcpy(input, cmd_line, PGSIZE);
+  tid_t child = process_execute(input);
+  return child;
+}
+
 static void syscall_handler(struct intr_frame *f UNUSED) {
     uint32_t *args = ((uint32_t *) f->esp);
 

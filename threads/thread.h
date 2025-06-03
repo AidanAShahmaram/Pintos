@@ -104,8 +104,8 @@ struct thread {
   struct list fd_list;
   int next_fd_num;
 
-  struct list child_status_list;
-  struct child_status *my_status;
+  struct list self_to_children;
+  struct child_status *parent_to_self;
 #endif
   
   /* Owned by thread.c. */
