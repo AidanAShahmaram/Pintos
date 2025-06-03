@@ -26,10 +26,12 @@ static struct semaphore temporary;
 static thread_func start_process NO_RETURN;
 static bool load(const char *cmdline, void (**eip)(void), void **esp);
 
-struct start_args{
-    char *file_name;
-    struct child_status *cstatus_ptr;
-}
+
+struct start_proc_args{
+  char *file_name;
+  struct child_status *wait_struct;
+};
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -60,34 +62,37 @@ tid_t process_execute(const char *file_name) {
     char *program_name = strtok_r(file_name, " ", &save_ptr);
     struct start_args *process_args = malloc(sizeof(struct start_args));
 
-    /* create child_status struct */
-    struct thread parent_thread = thread_current();
-    struct child_status *cs = create_child_status(-1);
-    if(cs = NULL){
-        free(args);
-        palloc_free_page(fn_copy);
-        return TID_ERROR
+
+    struct child_status *cs = child_status_create(tid);
+    list_push_back(&thread_current()->child_status_list, &cs->elem);
+
+
+    struct start_proc_args *spargs = malloc(sizeof(struct start_proc_args));
+    spargs->wait_struct = cs;
+    spargs->file_name = file_name;
+    
+    tid = thread_create(file_name, PRI_DEFAULT, start_process, spargs);
+
+    //fix this so that it is added to the parent's list, not child's
+    if (tid == TID_ERROR) {
+      palloc_free_page(fn_copy);
+      palloc_free_page(file_name_copy);
+      return TID_ERROR;
     }
-
-    tid = thread_create(file_name, PRI_DEFAULT, start_process, start_args);
-
-    cs->child_tid = tid;
-    push_front(parent_thread->self_to_children, child_status->elem);
-    thread_current()->parent_to_self = cs;
-
+    
     palloc_free_page(file_name_copy);
-
-    if (tid == TID_ERROR)
-        palloc_free_page(fn_copy);
     return tid;
 }
 
 /* A thread function that loads a user process and starts it
    running. */
-static void start_process(void *file_name_) {
-    char *file_name = file_name_->file_name;
-    struct intr_frame if_;
-    bool success;
+static void start_process(void *func_args) {
+  char *file_name = func_args->file_name;
+  struct intr_frame if_;
+  bool success;
+
+    set_child_tid(func_args->wait_struct);
+    thread_current()->my_status = func_args->wait_struct;
 
     /* Initialize interrupt frame and load executable. */
     memset(&if_, 0, sizeof if_);
@@ -102,6 +107,9 @@ static void start_process(void *file_name_) {
    /*palloc_free_page(file_name);
     if (!success)
         thread_exit();*/
+
+    //add wait struct to thread struct
+    thread_current()->my_status = func_args->wait_struct;
     if(success){
         char *argv[MAX_ARGS];
         void *arg_ptrs[MAX_ARGS];
@@ -169,6 +177,7 @@ static void start_process(void *file_name_) {
         *(void **) if_.esp = 0;
 
         palloc_free_page(file_name);
+	
     }else{
         palloc_free_page(file_name);
         thread_exit();

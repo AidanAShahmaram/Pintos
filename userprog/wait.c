@@ -4,11 +4,11 @@
 #include "threads/synch.h"
 
 /* Create and initialize a new child_status object. */
-struct child_status *child_status_create(tid_t child_tid) {
+struct child_status *child_status_create() {
   struct child_status *cs = malloc(sizeof(struct child_status));
   if (cs == NULL) return NULL;
 
-  cs->child_tid = child_tid;
+  cs->child_tid = -1;
   cs->exit_code = -1;
   cs->has_exited = false;
 
@@ -18,6 +18,11 @@ struct child_status *child_status_create(tid_t child_tid) {
 
   return cs;
 }
+
+void set_child_tid(struct child_status *cs){
+  cs->child_tid = thread_current()->tid;
+}
+  
 
 /* Called by the child at exit. */
 void child_status_exit(struct child_status *cs, int exit_code) {
