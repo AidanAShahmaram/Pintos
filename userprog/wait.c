@@ -29,6 +29,7 @@ void child_status_exit(struct child_status *cs, int exit_code) {
   cs->exit_code = exit_code;
   cs->has_exited = true;
   sema_up(&cs->exit_sema);
+  thread_current()->self_to_parent = NULL;
   child_status_release(cs); // Drop child's reference
 }
 
@@ -36,6 +37,7 @@ void child_status_exit(struct child_status *cs, int exit_code) {
 int child_status_wait(struct child_status *cs) {
   sema_down(&cs->exit_sema);
   int exit_code = cs->exit_code;
+  list_remove(cs->elem);
   child_status_release(cs); // Drop parent's reference
   return exit_code;
 }
