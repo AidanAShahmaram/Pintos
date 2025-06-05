@@ -15,11 +15,18 @@ struct child_status {
   struct lock ref_lock;
   struct semaphore exit_sema;
 
+  bool load_success;
+  struct semaphore load_sema;
+  
+
+  bool load_success;
+  struct semaphore load_sema;
+  
   struct list_elem elem; // To be used in parent->children list
 };
 
 /* Allocates and initializes a new child_status struct. */
-struct child_status *child_status_create();
+struct child_status *child_status_create(void);
 
 /* Mark child as exited and store its exit code. */
 void child_status_exit(struct child_status *cs, int exit_code);
@@ -32,4 +39,6 @@ void child_status_release(struct child_status *cs);
 
 void set_child_tid(struct child_status *cs, int tid);
   
+struct child_status *find_child_status(struct thread *parent, tid_t child_tid);
+
 #endif /* USERPROG_WAIT_H */

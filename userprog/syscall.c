@@ -29,6 +29,19 @@ void validate_user_buffer(const void *buffer, size_t size) {
   }
 }
 
+bool validate_user_string(const char *str){
+  while(true){
+    if(!is_user_vaddr(str))
+      return false;
+    if(pagedir_get_page(thread_current()->pagedir, str) == NULL)
+      return false;
+    if(*str == '\0')
+      break;
+    str++;
+  }
+  return true;
+}
+
 void syscall_init(void) {
   lock_init(&filesys_lock);
   intr_register_int(0x30, 3, INTR_ON, syscall_handler, "syscall");
@@ -136,7 +149,9 @@ void sys_close(int fd){
 
 int sys_exec(const char *cmd_line){
   /*create new proces*/
-  validate_user_ptr(cmd_line);
+  if(!validate_user_string(cmd_line)){
+    sys_exit(-1);
+  }
   char *input = palloc_get_page(0);
   size_t len = strlen(cmd_line) + 1;
   if(input == NULL){
@@ -145,6 +160,16 @@ int sys_exec(const char *cmd_line){
   strlcpy(input, cmd_line, PGSIZE);
   tid_t child = process_execute(input);
   return child;
+}
+
+int wait(pid_t pid){
+  struct thread *curr = thread_current();
+  struct child_status *cs = find_child_struct(curr, pid);
+  if(cs == NULL){
+    return -1;
+  }
+  int exit_code = child_status_wait(cs);
+  return exit_code;
 }
 
 static void syscall_handler(struct intr_frame *f UNUSED) {
@@ -209,6 +234,9 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
     } else if(args[0] == SYS_CLOSE){
       int fd_arg = args[1];
       sys_close(fd_arg);
+    } else if(args[0] == SYS_WAIT){
+      pid_t child_pid = args[1];
+      f->eax = sys_wait(child_pid);
     }
       
 }
