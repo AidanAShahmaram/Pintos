@@ -22,7 +22,7 @@ struct child_status *child_status_create() {
   return cs;
 }
 
-void set_child_tid(struct child_status *cs, tid_t tid){
+void set_child_tid(struct child_status *cs, int tid){
   cs->child_tid = tid;
 }
   
@@ -61,7 +61,7 @@ struct child_status *find_child_status(struct thread *parent, tid_t child_tid){
   struct list_elem *e;
   for(e = list_begin(&parent->self_to_children); e != list_end(&parent->self_to_children); e = list_next(e)){
     struct child_status *cs = list_entry(e, struct child_status, elem);
-    if(scs->child_tid == child_tid){
+    if(cs->child_tid == child_tid){
       return cs;
     }
   }
