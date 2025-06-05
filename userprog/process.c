@@ -59,12 +59,12 @@ tid_t process_execute(const char *file_name) {
     //char *program_name = strtok_r(file_name, " ", &save_ptr);
     //struct start_args *process_args = malloc(sizeof(struct start_args));
 
-
-    struct child_status *cs = child_status_create(tid);
-    if(!cs->load_suuccess){
+    struct child_status *cs = child_status_create();
+    cs->child_tid = tid;
+    if(!cs->load_success){
         return TID_ERROR;
     }
-    list_push_back(&thread_current()->child_status_list, &cs->elem);
+    list_push_back(&thread_current()->self_to_children, &cs->elem);
 
 
     struct start_proc_args *spargs = malloc(sizeof(*spargs));
@@ -101,8 +101,8 @@ static void start_process(void *func_args) {
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
     success = load(file_name, &if_.eip, &if_.esp);
-    cs->load_success = success;
-    sema_up(&cs->load_sema);
+    thread_current()->self_to_parent->load_success = success;
+    sema_up(&thread_current()->self_to_parent->load_sema);
 
     //if_.esp = PHYS_BASE - 12;
 

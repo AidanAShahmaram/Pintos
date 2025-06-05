@@ -51,6 +51,9 @@ void sys_exit(int code){
   struct thread *cur = thread_current();
   //cur->exit_status = code;
   printf("%s: exit(%d)\n", cur->name, code);
+  if(cur->self_to_parent != NULL){
+    child_status_exit(cur->self_to_parent, code);
+  }
   thread_exit();  // Does not return
 }
 
@@ -157,14 +160,15 @@ int sys_exec(const char *cmd_line){
   if(input == NULL){
     return -1;
   }
+  
   strlcpy(input, cmd_line, PGSIZE);
   tid_t child = process_execute(input);
   return child;
 }
 
-int wait(pid_t pid){
+int sys_wait(tid_t pid){
   struct thread *curr = thread_current();
-  struct child_status *cs = find_child_struct(curr, pid);
+  struct child_status *cs = find_child_status(curr, pid);
   if(cs == NULL){
     return -1;
   }
@@ -235,7 +239,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       int fd_arg = args[1];
       sys_close(fd_arg);
     } else if(args[0] == SYS_WAIT){
-      pid_t child_pid = args[1];
+      tid_t child_pid = args[1];
       f->eax = sys_wait(child_pid);
     }
       

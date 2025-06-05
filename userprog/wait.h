@@ -18,10 +18,6 @@ struct child_status {
   bool load_success;
   struct semaphore load_sema;
   
-
-  bool load_success;
-  struct semaphore load_sema;
-  
   struct list_elem elem; // To be used in parent->children list
 };
 
@@ -39,6 +35,6 @@ void child_status_release(struct child_status *cs);
 
 void set_child_tid(struct child_status *cs, int tid);
   
-struct child_status *find_child_status(struct thread *parent, tid_t child_tid);
+struct child_status *find_child_status(struct thread *parent, int child_tid);
 
 #endif /* USERPROG_WAIT_H */
