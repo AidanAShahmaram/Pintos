@@ -10,7 +10,6 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 #include "userprog/pagedir.h"
-#include "userprog/fd.h"
 
 static struct lock filesys_lock;
 
@@ -245,9 +244,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
     validate_user_ptr(f->esp + 0*sizeof(uint32_t));
     if (args[0] == SYS_EXIT) {
         validate_user_ptr(f->esp + 1*sizeof(uint32_t));
-        f->eax = args[1];
-        printf("%s: exit(%d)\n", thread_current()->name, args[1]);
-        thread_exit();
+        sys_exit(args[1]);
     } else if (args[0] == SYS_INCREMENT){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       f->eax = args[1] + 1;
@@ -309,5 +306,9 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       sys_close(fd_arg);
     } else if(args[0] == SYS_HALT){
       sys_halt();
+    } else if(args[0] == SYS_EXEC){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      char *cmd = args[1];
+      sys_exec(cmd);
     }
 }
