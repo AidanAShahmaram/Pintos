@@ -56,11 +56,10 @@ tid_t process_execute(const char *file_name) {
     /* Create a new thread to execute FILE_NAME. */
     
     char *save_ptr;
-    char *program_name = strtok_r(file_name, " ", &save_ptr);
+    char *program_name = strtok_r(fn_copy, " ", &save_ptr);
     //struct start_args *process_args = malloc(sizeof(struct start_args));
 
     struct child_status *cs = child_status_create();
-    cs->child_tid = tid;
     if(!cs->load_success){
         return TID_ERROR;
     }
@@ -72,11 +71,22 @@ tid_t process_execute(const char *file_name) {
     spargs->file_name = file_name;
     
     tid = thread_create(file_name, PRI_DEFAULT, start_process, spargs);
+    
 
     palloc_free_page(file_name_copy);
 
-    if (tid == TID_ERROR){
-      palloc_free_page(fn_copy);
+    if (tid == TID_ERROR) {
+        list_remove (&cs->elem);
+        child_status_release (cs);
+        palloc_free_page (fn_copy);
+        return TID_ERROR;
+      }
+
+    cs->child_tid = tid;
+
+    sema_down(&cs->load_sema);
+    if(!cs->load_success){
+        return TID_ERROR;
     }
     return tid;
 }
@@ -98,6 +108,8 @@ static void start_process(void *func_args) {
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
     success = load(file_name, &if_.eip, &if_.esp);
+    printf("Attempting to load: %s\n", thread_current()->name);
+
     thread_current()->self_to_parent->load_success = success;
     sema_up(&thread_current()->self_to_parent->load_sema);
 
@@ -203,17 +215,23 @@ static void start_process(void *func_args) {
    does nothing. */
 int process_wait(tid_t child_tid) {
     //sema_down(&temporary);
-    struct child_struct *cs = find_child_struct(thread_current(), child_tid);
+    struct child_struct *cs = find_child_status(thread_current(), child_tid);
     if(cs == NULL){
         return -1;
     }
+
     int exit_code = child_status_wait(cs);
     return exit_code;}
 
 /* Free the current process's resources. */
 void process_exit(void) {
     struct thread *cur = thread_current();
+    struct child_status *cs = cur->self_to_parent;
     uint32_t *pd;
+
+    if(cs != NULL){
+        child_status_exit(cs, cur->self_to_children->exit_code);
+    }
 
     /* Destroy the current process's page directory and switch back
        to the kernel-only page directory. */
@@ -231,7 +249,6 @@ void process_exit(void) {
         pagedir_destroy(pd);
     }
     //sema_up(&temporary);
-    //child_status_exit(cur, code);
 }
 
 /* Sets up the CPU for running user code in the current

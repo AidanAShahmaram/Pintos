@@ -177,7 +177,7 @@ int sys_wait(tid_t pid){
   if(cs == NULL){
     return -1;
   }
-  int exit_code = process_wait(cs);
+  int exit_code = process_wait(&cs->child_tid);
   return exit_code;
 }
 
@@ -195,8 +195,9 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
 
     if (args[0] == SYS_EXIT) {
         f->eax = args[1];
-        printf("%s: exit(%d)\n", thread_current()->name, args[1]);
         sys_exit(args[1]);
+        printf("%s: exit(%d)\n", thread_current()->name, args[1]);
+
     } else if (args[0] == SYS_INCREMENT){
       f->eax = args[1] + 1;
     } else if(args[0] == SYS_WRITE){
