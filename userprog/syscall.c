@@ -53,7 +53,16 @@ void sys_exit(int code){
 }
 
 int sys_open(const char *file){
-  validate_user_ptr(file);
+  if(file == NULL){
+    sys_exit(-1);
+  }
+  if(!validate_user_string(file)){
+    sys_exit(-1);
+  }
+  size_t len = strlen(file);
+  if(len == 0 || len > 14){ //max file name of 14 in pintos reference
+    return -1;
+  }
   lock_acquire(&filesys_lock);
   
   struct file *f = filesys_open(file);
@@ -75,13 +84,10 @@ int sys_open(const char *file){
 
 bool sys_create(const char *file, off_t initial_size){
   if(file == NULL){
-    return -1;
+    sys_exit(-1);
   }
-  for(const char *i = file; ; i++){
-    validate_user_ptr(i);
-    if(*i == '\0'){
-      break;
-    }
+  if(!validate_user_string(file)){
+    sys_exit(-1);
   }
   size_t len = strlen(file);
   if(len == 0 || len > 14){ //max file name of 14 in pintos reference
@@ -94,6 +100,9 @@ bool sys_create(const char *file, off_t initial_size){
 }
 
 bool sys_remove(const char *file){
+  if(file == NULL){
+    return false;
+  }
   validate_user_ptr(file);
   lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
@@ -110,12 +119,17 @@ int sys_filesize(int fd){
 }
 
 int sys_read(int fd, void *buffer, unsigned size){
-  validate_user_buffer(buffer, size);
-  lock_acquire(&filesys_lock);
+  if(size == 0){
+    return 0;
+  }
+  if(fd == STDOUT_FILENO || (fd_lookup(fd) == NULL)){
+    sys_exit(-1);
+  }
   if(buffer == NULL){
-    lock_release(&filesys_lock);
     return false;
   }
+  validate_user_buffer(buffer, size);
+  lock_acquire(&filesys_lock);
   struct fd_entry *fd_ent = fd_lookup(fd);
   int bytes_read = file_read(fd_ent->file, buffer, size);
   lock_release(&filesys_lock);
@@ -227,6 +241,14 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       int fd_arg = args[1];
       const void *buf = args[2];
       unsigned size = args[3];
+      if(buf == NULL){
+        sys_exit(-1);
+      }
+
+      struct fd_entry *fde = fd_lookup(fd_arg);
+      if(fde = NULL){
+        sys_exit(-1);
+      }
       f->eax = sys_read(fd_arg, buf, size);
     } else if(args[0] == SYS_WRITE){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
