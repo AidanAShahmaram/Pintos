@@ -44,12 +44,11 @@ bool validate_user_buffer(const void *buffer, size_t size) {
   }
   const uint8_t *ptr = (const uint8_t *)buffer;
   for (size_t i = 0; i < size; i++) {
-    if ((ptr + i) == NULL || !is_user_vaddr((ptr + i)) || pagedir_get_page(thread_current()->pagedir, (ptr + i)) == NULL) {
+    if (!is_user_vaddr((ptr + i)) || pagedir_get_page(thread_current()->pagedir, (ptr + i)) == NULL) {
       return false;
-    } else{
-      return true;
     }
-  }
+  } 
+  return true;
 }
 
 void syscall_init(void) {
@@ -180,6 +179,9 @@ int sys_write(int fd, const void *buffer, unsigned size){
 
   lock_acquire(&filesys_lock);
   struct fd_entry *fd_ent = fd_lookup(fd);
+  if(fd_ent == NULL){
+    return -1;
+  }
   int bytes_written = file_write(fd_ent->file, buffer, size);
   lock_release(&filesys_lock);
   return bytes_written;
@@ -248,20 +250,6 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
     } else if (args[0] == SYS_INCREMENT){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       f->eax = args[1] + 1;
-    } else if(args[0] == SYS_WRITE){
-      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
-      validate_user_ptr(f->esp + 2*sizeof(uint32_t));
-      validate_user_ptr(f->esp + 3*sizeof(uint32_t));
-      int fd = args[1];
-      const void *buffer = args[2];
-      unsigned size = args[3];
-
-      if(fd == 1){
-	      putbuf(buffer, size);
-	      f->eax = size;
-      } else{
-	      f->eax = -1;
-      }
     } else if(args[0] == SYS_OPEN){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       const char *file_name = args[1];
