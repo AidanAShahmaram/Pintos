@@ -201,9 +201,14 @@ static void start_process(void *func_args) {
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
-int process_wait(tid_t child_tid UNUSED) {
-    sema_down(&temporary);
-    return 0;}
+int process_wait(tid_t child_tid) {
+    //sema_down(&temporary);
+    struct child_struct *cs = find_child_struct(thread_current(), child_tid);
+    if(cs == NULL){
+        return -1;
+    }
+    int exit_code = child_status_wait(cs);
+    return exit_code;}
 
 /* Free the current process's resources. */
 void process_exit(void) {
@@ -225,7 +230,8 @@ void process_exit(void) {
         pagedir_activate(NULL);
         pagedir_destroy(pd);
     }
-    sema_up(&temporary);
+    //sema_up(&temporary);
+    //child_status_exit(cur, code);
 }
 
 /* Sets up the CPU for running user code in the current

@@ -52,7 +52,7 @@ void sys_exit(int code){
   //cur->exit_status = code;
   printf("%s: exit(%d)\n", cur->name, code);
   if(cur->self_to_parent != NULL){
-    child_status_exit(cur->self_to_parent, code);
+    process_exit(cur->self_to_parent, code);
   }
   lock_acquire(&filesys_lock);
   thread_exit();  // Does not return
@@ -173,11 +173,11 @@ int sys_exec(const char *cmd_line){
 
 int sys_wait(tid_t pid){
   struct thread *curr = thread_current();
-  struct child_status *cs = find_child_status(curr, pid);
+  struct child_status *cs = find_child_struct(curr, pid);
   if(cs == NULL){
     return -1;
   }
-  int exit_code = child_status_wait(cs);
+  int exit_code = process_wait(cs);
   return exit_code;
 }
 
@@ -196,7 +196,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
     if (args[0] == SYS_EXIT) {
         f->eax = args[1];
         printf("%s: exit(%d)\n", thread_current()->name, args[1]);
-        thread_exit();
+        sys_exit(args[1]);
     } else if (args[0] == SYS_INCREMENT){
       f->eax = args[1] + 1;
     } else if(args[0] == SYS_WRITE){

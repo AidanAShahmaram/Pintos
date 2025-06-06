@@ -38,11 +38,14 @@ void child_status_exit(struct child_status *cs, int exit_code) {
 
 /* Called by parent to wait on the child. */
 int child_status_wait(struct child_status *cs) {
+  if(cs != NULL){
   sema_down(&cs->exit_sema);
   int exit_code = cs->exit_code;
   list_remove(&cs->elem);
   child_status_release(cs); // Drop parent's reference
   return exit_code;
+  }
+  return -1;
 }
 
 /* Releases a reference to the struct and frees it if unused. */
@@ -57,7 +60,7 @@ void child_status_release(struct child_status *cs) {
   }
 }
 
-struct child_status *find_child_status(struct thread *parent, tid_t child_tid){
+struct child_status *find_child_struct(struct thread *parent, tid_t child_tid){
   struct list_elem *e;
   for(e = list_begin(&parent->self_to_children); e != list_end(&parent->self_to_children); e = list_next(e)){
     struct child_status *cs = list_entry(e, struct child_status, elem);
