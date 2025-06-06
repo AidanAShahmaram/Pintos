@@ -6,7 +6,7 @@
 struct start_proc_args{
   char *file_name;
   struct thread *par;
-  struct semaphore *sem_luv;
+  struct semaphore *sem_load;
 };
 
 tid_t process_execute(const char *file_name);

@@ -57,20 +57,12 @@ tid_t process_execute(const char *file_name) {
     char *program_name = strtok_r(file_name, " ", &save_ptr);
 
 
-    /* struct child_status *cs = child_status_create();
-    list_push_back(&thread_current()->self_to_children, &cs->elem);
-    struct child_struct *son = find_child_status(thread_current(), child_tid);
-    if(son == NULL){
-      return -1;
-      }*/
-
-
     struct start_proc_args *spargs = malloc(sizeof(*spargs));
     spargs->par = thread_current();
     spargs->file_name = fn_copy;
     struct semaphore sem_load;
     sema_init (&sem_load, 0);
-    spargs->sem_luv = &sem_load;
+    spargs->sem_load = &sem_load;
     
     tid = thread_create(file_name, PRI_DEFAULT, start_process, spargs);
 
@@ -186,11 +178,11 @@ static void start_process(void *func_args) {
 	
     }else{
       palloc_free_page(file_name_);
-      sema_up(cast_args->sem_luv);
+      sema_up(cast_args->sem_load);
         thread_exit();
     }
 
-    sema_up(cast_args->sem_luv); 
+    sema_up(cast_args->sem_load); 
     
 
     /* Start the user process by simulating a return from an

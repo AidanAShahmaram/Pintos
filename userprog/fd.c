@@ -9,7 +9,7 @@ struct fd_entry *fd_create(struct file *f) {
     struct thread *cur = thread_current();
     struct fd_entry *fde = malloc(sizeof(struct fd_entry));
     if (!fde) return NULL;
-
+    
     fde->fd = cur->next_fd_num++;
     fde->file = f;
     list_push_back(&cur->fd_list, &fde->elem);

@@ -3,7 +3,6 @@
 #include "threads/malloc.h"
 #include "threads/synch.h"
 
-/* Create and initialize a new child_status object. */
 struct child_status *child_status_create() {
   struct child_status *cs = malloc(sizeof(struct child_status));
   if (cs == NULL) return NULL;
@@ -24,7 +23,6 @@ void set_child_tid(struct child_status *cs, int tid){
 }
   
 
-/* Called by the child at exit. */
 void child_status_exit(struct child_status *cs, int exit_code) {
   cs->exit_code = exit_code;
   cs->has_exited = true;
@@ -33,7 +31,6 @@ void child_status_exit(struct child_status *cs, int exit_code) {
   child_status_release(cs); // Drop child's reference
 }
 
-/* Called by parent to wait on the child. */
 int child_status_wait(struct child_status *cs) {
   if(cs == NULL){
     return -1;
@@ -45,7 +42,6 @@ int child_status_wait(struct child_status *cs) {
   return exit_code;
 }
 
-/* Releases a reference to the struct and frees it if unused. */
 void child_status_release(struct child_status *cs) {
   lock_acquire(&cs->ref_lock);
   cs->ref_count--;

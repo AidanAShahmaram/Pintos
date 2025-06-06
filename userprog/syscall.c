@@ -23,6 +23,9 @@ static void validate_user_ptr(const void *uaddr) {
 }
 
 bool validate_user_string(const char *str) {
+  if(str == NULL){
+    return false;
+  }
   while (true) {
       if (!is_user_vaddr(str)) 
         return false;
@@ -35,7 +38,10 @@ bool validate_user_string(const char *str) {
   return true;
 }
 
-void validate_user_buffer(const void *buffer, size_t size) {
+bool validate_user_buffer(const void *buffer, size_t size) {
+  if(buffer == NULL){
+    return false;
+  }
   const uint8_t *ptr = (const uint8_t *)buffer;
   for (size_t i = 0; i < size; i++) {
     validate_user_ptr(ptr + i);
@@ -105,7 +111,7 @@ bool sys_remove(const char *file){
   if(file == NULL){
     return false;
   }
-  validate_user_ptr(file);
+  validate_user_string(file);
   lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
   lock_release(&filesys_lock);
@@ -124,7 +130,9 @@ int sys_read(int fd, void *buffer, unsigned size){
   if(buffer == NULL){
     sys_exit(-1);
   }
-  validate_user_buffer(buffer, size);
+  if(!validate_user_buffer(buffer, size)){
+    sys_exit(-1);
+  }
   if(size == 0){
     return 0;
   }
@@ -145,7 +153,8 @@ int sys_read(int fd, void *buffer, unsigned size){
 int sys_write(int fd, const void *buffer, unsigned size){
   if(buffer == NULL){
     return false;
-  }validate_user_buffer(buffer, size);
+  }
+  validate_user_buffer(buffer, size);
   lock_acquire(&filesys_lock);
   
   struct fd_entry *fd_ent = fd_lookup(fd);
@@ -178,7 +187,10 @@ void sys_close(int fd){
 
 int sys_exec(const char *cmd_line){
   /*create new proces*/
-  validate_user_ptr(cmd_line);
+  if(cmd_line == NULL){
+    return -1;
+  }
+  validate_user_string(cmd_line);
   char *input = palloc_get_page(0);
   size_t len = strlen(cmd_line) + 1;
   if(input == NULL){
