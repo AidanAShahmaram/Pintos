@@ -7,7 +7,6 @@
 
 #include "threads/fixed-point.h"
 #include "threads/synch.h"
-#include "userprog/wait.h"
 
 
 /* !!!!!!!!!!!!!!!!!!!!  child_status struct    !!!!!!!!!!!!!!!!!!!!!!!!!!!! */
