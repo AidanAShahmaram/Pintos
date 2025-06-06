@@ -3,6 +3,9 @@
 #include <stddef.h>
 
 struct fd_entry *fd_create(struct file *f) {
+    if(f == NULL){
+        return NULL;
+    }
     struct thread *cur = thread_current();
     struct fd_entry *fde = malloc(sizeof(struct fd_entry));
     if (!fde) return NULL;

@@ -14,6 +14,8 @@ struct child_status {
   struct lock ref_lock;
   struct semaphore exit_sema;
 
+  bool load_success;
+
   struct list_elem elem; // To be used in parent->children list
 };
 

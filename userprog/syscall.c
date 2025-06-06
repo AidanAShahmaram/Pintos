@@ -24,10 +24,12 @@ static void validate_user_ptr(const void *uaddr) {
 
 bool validate_user_string(const char *str) {
   while (true) {
-      if (!is_user_vaddr(str)) return false;
+      if (!is_user_vaddr(str)) 
+        return false;
       if (pagedir_get_page(thread_current()->pagedir, str) == NULL)
-          return false;
-      if (*str == '\0') break;
+        return false;
+      if (*str == '\0') 
+        break;
       str++;
   }
   return true;
@@ -119,30 +121,33 @@ int sys_filesize(int fd){
 }
 
 int sys_read(int fd, void *buffer, unsigned size){
+  if(buffer == NULL){
+    sys_exit(-1);
+  }
+  validate_user_buffer(buffer, size);
   if(size == 0){
     return 0;
   }
-  if(fd == STDOUT_FILENO || (fd_lookup(fd) == NULL)){
-    sys_exit(-1);
+  if(fd == STDOUT_FILENO){
+    return -1;
   }
-  if(buffer == NULL){
-    return false;
-  }
-  validate_user_buffer(buffer, size);
+
+   struct fd_entry *fd_ent = fd_lookup(fd);
+   if(fd_ent == NULL){
+    return -1;
+   }
   lock_acquire(&filesys_lock);
-  struct fd_entry *fd_ent = fd_lookup(fd);
   int bytes_read = file_read(fd_ent->file, buffer, size);
   lock_release(&filesys_lock);
   return bytes_read;
 }
 
 int sys_write(int fd, const void *buffer, unsigned size){
-  validate_user_buffer(buffer, size);
-  lock_acquire(&filesys_lock);
   if(buffer == NULL){
-    lock_release(&filesys_lock);
     return false;
-  }
+  }validate_user_buffer(buffer, size);
+  lock_acquire(&filesys_lock);
+  
   struct fd_entry *fd_ent = fd_lookup(fd);
   int bytes_written = file_write(fd_ent->file, buffer, size);
   lock_release(&filesys_lock);
@@ -207,6 +212,8 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       f->eax = args[1] + 1;
     } else if(args[0] == SYS_WRITE){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 2*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 3*sizeof(uint32_t));
       int fd = args[1];
       const void *buffer = args[2];
       unsigned size = args[3];
@@ -223,6 +230,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       f->eax = sys_open(file_name);
     } else if(args[0] == SYS_CREATE){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 2*sizeof(uint32_t));
       const char *file_name = (const char *)args[1];
       int init_size = args[2];
       f->eax = sys_create(file_name, init_size);
@@ -273,5 +281,4 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       int fd_arg = args[1];
       sys_close(fd_arg);
     }
-      
 }
