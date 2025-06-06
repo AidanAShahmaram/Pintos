@@ -134,29 +134,28 @@ int sys_read(int fd, void *buffer, unsigned size){
   if(buffer == NULL){
     sys_exit(-1);
   }
-  if(!validate_user_buffer(buffer, size)){
-    sys_exit(-1);
-  }
-  if(size == 0){
-    return 0;
+  if(size > 0){
+    if(!validate_user_buffer(buffer, size)){
+      sys_exit(-1);
+    }
   }
   if(fd == STDOUT_FILENO){
     return -1;
   }
 
   if (fd == STDIN_FILENO) {
-    /* read from console one byte at a time */
     unsigned count = 0;
     uint8_t *buf = buffer;
     while (count < size) {
-      buf[count++] = input_getc ();
+      buf[count++] = input_getc();
     }
     return count;
   }
-   struct fd_entry *fd_ent = fd_lookup(fd);
-   if(fd_ent == NULL){
+
+  struct fd_entry *fd_ent = fd_lookup(fd);
+  if(fd_ent == NULL){
     return -1;
-   }
+  }
   lock_acquire(&filesys_lock);
   int bytes_read = file_read(fd_ent->file, buffer, size);
   lock_release(&filesys_lock);
@@ -165,10 +164,13 @@ int sys_read(int fd, void *buffer, unsigned size){
 
 int sys_write(int fd, const void *buffer, unsigned size){
   if(buffer == NULL){
-    return false;
+     sys_exit(-1);
   }
   if(!validate_user_buffer(buffer, size)){
     sys_exit(-1);
+  }
+  if(fd == STDIN_FILENO){
+    return -1;
   }
 
   if (fd == STDOUT_FILENO) {
