@@ -170,6 +170,12 @@ int sys_write(int fd, const void *buffer, unsigned size){
   if(!validate_user_buffer(buffer, size)){
     sys_exit(-1);
   }
+
+  if (fd == STDOUT_FILENO) {
+    putbuf (buffer, size);
+    return (int) size;
+  }
+
   lock_acquire(&filesys_lock);
   struct fd_entry *fd_ent = fd_lookup(fd);
   int bytes_written = file_write(fd_ent->file, buffer, size);
