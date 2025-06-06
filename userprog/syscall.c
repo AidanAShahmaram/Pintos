@@ -180,6 +180,7 @@ int sys_write(int fd, const void *buffer, unsigned size){
   lock_acquire(&filesys_lock);
   struct fd_entry *fd_ent = fd_lookup(fd);
   if(fd_ent == NULL){
+    lock_release(&filesys_lock);
     return -1;
   }
   int bytes_written = file_write(fd_ent->file, buffer, size);
