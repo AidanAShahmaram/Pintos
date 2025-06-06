@@ -44,7 +44,11 @@ bool validate_user_buffer(const void *buffer, size_t size) {
   }
   const uint8_t *ptr = (const uint8_t *)buffer;
   for (size_t i = 0; i < size; i++) {
-    validate_user_ptr(ptr + i);
+    if ((ptr + i) == NULL || !is_user_vaddr((ptr + i)) || pagedir_get_page(thread_current()->pagedir, (ptr + i)) == NULL) {
+      return false;
+    } else{
+      return true;
+    }
   }
 }
 
@@ -140,6 +144,15 @@ int sys_read(int fd, void *buffer, unsigned size){
     return -1;
   }
 
+  if (fd == STDIN_FILENO) {
+    /* read from console one byte at a time */
+    unsigned count = 0;
+    uint8_t *buf = buffer;
+    while (count < size) {
+      buf[count++] = input_getc ();
+    }
+    return count;
+  }
    struct fd_entry *fd_ent = fd_lookup(fd);
    if(fd_ent == NULL){
     return -1;
@@ -154,9 +167,10 @@ int sys_write(int fd, const void *buffer, unsigned size){
   if(buffer == NULL){
     return false;
   }
-  validate_user_buffer(buffer, size);
+  if(!validate_user_buffer(buffer, size)){
+    sys_exit(-1);
+  }
   lock_acquire(&filesys_lock);
-  
   struct fd_entry *fd_ent = fd_lookup(fd);
   int bytes_written = file_write(fd_ent->file, buffer, size);
   lock_release(&filesys_lock);
@@ -201,6 +215,10 @@ int sys_exec(const char *cmd_line){
   return child;
 }
 
+void sys_halt(void){
+  shutdown_power_off();
+}
+
 static void syscall_handler(struct intr_frame *f UNUSED) {
   validate_user_ptr(f->esp);
   uint32_t *args = ((uint32_t *) f->esp);
@@ -231,10 +249,10 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       unsigned size = args[3];
 
       if(fd == 1){
-	putbuf(buffer, size);
-	f->eax = size;
-      }else{
-	f->eax = -1;
+	      putbuf(buffer, size);
+	      f->eax = size;
+      } else{
+	      f->eax = -1;
       }
     } else if(args[0] == SYS_OPEN){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
@@ -292,5 +310,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       int fd_arg = args[1];
       sys_close(fd_arg);
+    } else if(args[0] == SYS_HALT){
+      sys_halt();
     }
 }
