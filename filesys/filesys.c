@@ -93,7 +93,7 @@ static void do_format(void) {
     free_map_close();
     printf("done.\n");
 }
-
+/*
 struct fd_entry *fd_create(struct file *f) {
     if(f == NULL){
         return NULL;
@@ -145,3 +145,4 @@ void fd_close_all(void) {
         free(fde);
     }
 }
+*/
