@@ -22,6 +22,17 @@ static void validate_user_ptr(const void *uaddr) {
   }
 }
 
+bool validate_user_string(const char *str) {
+  while (true) {
+      if (!is_user_vaddr(str)) return false;
+      if (pagedir_get_page(thread_current()->pagedir, str) == NULL)
+          return false;
+      if (*str == '\0') break;
+      str++;
+  }
+  return true;
+}
+
 void validate_user_buffer(const void *buffer, size_t size) {
   const uint8_t *ptr = (const uint8_t *)buffer;
   for (size_t i = 0; i < size; i++) {
@@ -63,7 +74,19 @@ int sys_open(const char *file){
 }
 
 bool sys_create(const char *file, off_t initial_size){
-  validate_user_ptr(file);
+  if(file == NULL){
+    return -1;
+  }
+  for(const char *i = file; ; i++){
+    validate_user_ptr(i);
+    if(*i == '\0'){
+      break;
+    }
+  }
+  size_t len = strlen(file);
+  if(len == 0 || len > 14){ //max file name of 14 in pintos reference
+    return false;
+  }
   lock_acquire(&filesys_lock);
   bool success = filesys_create(file, initial_size);
   lock_release(&filesys_lock);
@@ -148,7 +171,8 @@ int sys_exec(const char *cmd_line){
 }
 
 static void syscall_handler(struct intr_frame *f UNUSED) {
-    uint32_t *args = ((uint32_t *) f->esp);
+  validate_user_ptr(f->esp);
+  uint32_t *args = ((uint32_t *) f->esp);
 
     /*
      * The following print statement, if uncommented, will print out the syscall
@@ -158,14 +182,17 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
      */
 
     /* printf("System call number: %d\n", args[0]); */
-
+    validate_user_ptr(f->esp + 0*sizeof(uint32_t));
     if (args[0] == SYS_EXIT) {
+        validate_user_ptr(f->esp + 1*sizeof(uint32_t));
         f->eax = args[1];
         printf("%s: exit(%d)\n", thread_current()->name, args[1]);
         thread_exit();
     } else if (args[0] == SYS_INCREMENT){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       f->eax = args[1] + 1;
     } else if(args[0] == SYS_WRITE){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       int fd = args[1];
       const void *buffer = args[2];
       unsigned size = args[3];
@@ -177,36 +204,50 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
 	f->eax = -1;
       }
     } else if(args[0] == SYS_OPEN){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       const char *file_name = args[1];
       f->eax = sys_open(file_name);
     } else if(args[0] == SYS_CREATE){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       const char *file_name = (const char *)args[1];
       int init_size = args[2];
       f->eax = sys_create(file_name, init_size);
     } else if(args[0] == SYS_REMOVE){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       const char *file_name = args[1];
       f->eax = sys_remove(file_name);
     } else if(args[0] == SYS_FILESIZE){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       int fd_arg = args[1];
       f->eax = sys_filesize(fd_arg);
     } else if(args[0] == SYS_READ){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 2*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 3*sizeof(uint32_t));
       int fd_arg = args[1];
       const void *buf = args[2];
       unsigned size = args[3];
       f->eax = sys_read(fd_arg, buf, size);
     } else if(args[0] == SYS_WRITE){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 2*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 3*sizeof(uint32_t));
       int fd_arg = args[1];
       const void *buf =	args[2];
       unsigned size = args[3];
       f->eax = sys_write(fd_arg, buf, size);
     } else if(args[0] == SYS_SEEK){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      validate_user_ptr(f->esp + 2*sizeof(uint32_t));
       int fd_arg = args[1];
       int pos = args[2];
       sys_seek(fd_arg, pos);      
     } else if(args[0] == SYS_TELL){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       int fd_arg = args[1];
       f->eax = sys_tell(fd_arg);
     } else if(args[0] == SYS_CLOSE){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
       int fd_arg = args[1];
       sys_close(fd_arg);
     }

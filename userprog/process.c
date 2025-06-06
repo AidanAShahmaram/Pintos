@@ -67,7 +67,7 @@ tid_t process_execute(const char *file_name) {
 
     struct start_proc_args *spargs = malloc(sizeof(*spargs));
     spargs->par = thread_current();
-    spargs->file_name = file_name;
+    spargs->file_name = fn_copy;
     struct semaphore sem_load;
     sema_init (&sem_load, 0);
     spargs->sem_luv = &sem_load;
@@ -91,10 +91,10 @@ tid_t process_execute(const char *file_name) {
    running. */
 static void start_process(void *func_args) {  
   struct start_proc_args *cast_args = (struct start_proc_args *)func_args;
-  char *file_name = cast_args->file_name;
+  char *file_name_ = cast_args->file_name;
   struct intr_frame if_;
   bool success;
-
+  
   struct child_status *cs = child_status_create();
   list_push_back(&cast_args->par->self_to_children, &cs->elem);
   set_child_tid(cs, thread_current());
@@ -105,7 +105,7 @@ static void start_process(void *func_args) {
     if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
-    success = load(file_name, &if_.eip, &if_.esp);
+    success = load(file_name_, &if_.eip, &if_.esp);
 
     //if_.esp = PHYS_BASE - 12;
 
@@ -122,7 +122,7 @@ static void start_process(void *func_args) {
         int argc = 0;
 
         char *token, *save_ptr;
-        for(token = strtok_r(file_name, " ", &save_ptr); token != NULL;
+        for(token = strtok_r(file_name_, " ", &save_ptr); token != NULL;
             token = strtok_r(NULL, " ", &save_ptr)){
                 if(argc < MAX_ARGS){
                     argv[argc++] = token;
@@ -182,10 +182,10 @@ static void start_process(void *func_args) {
         if_.esp -= sizeof(void *);
         *(void **) if_.esp = 0;
 
-        //palloc_free_page(file_name);
+        palloc_free_page(file_name_);
 	
     }else{
-      //palloc_free_page(file_name);
+      palloc_free_page(file_name_);
       sema_up(cast_args->sem_luv);
         thread_exit();
     }
@@ -214,9 +214,9 @@ static void start_process(void *func_args) {
    does nothing. */
 int process_wait(tid_t child_tid) {
   struct child_struct *son = find_child_status(thread_current(), child_tid);
-  /*if(son == NULL){
+  if(son == NULL){
     return -1;
-    }*/
+    }
   return child_status_wait(son);
 }
 

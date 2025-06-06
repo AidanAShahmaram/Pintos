@@ -20,7 +20,6 @@ struct child_status {
 /* Allocates and initializes a new child_status struct. */
 struct child_status *child_status_create();
 
-void child_status_exit(struct child_status *cs, int exit_code);
 
 /* Mark child as exited and store its exit code. */
 void child_status_exit(struct child_status *cs, int exit_code);
