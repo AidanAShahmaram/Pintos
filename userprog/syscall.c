@@ -308,6 +308,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       sys_halt();
     } else if(args[0] == SYS_EXEC){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      validate_user_string(args[1]);
       char *cmd = args[1];
       sys_exec(cmd);
     }

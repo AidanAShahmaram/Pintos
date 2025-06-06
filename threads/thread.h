@@ -7,6 +7,8 @@
 
 #include "threads/fixed-point.h"
 #include "threads/synch.h"
+#include "filesys/filesys.h"
+
 
 
 /* !!!!!!!!!!!!!!!!!!!!  child_status struct    !!!!!!!!!!!!!!!!!!!!!!!!!!!! */
