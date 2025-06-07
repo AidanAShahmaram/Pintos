@@ -214,7 +214,9 @@ int sys_exec(const char *cmd_line){
   if(cmd_line == NULL){
     return -1;
   }
-  validate_user_string(cmd_line);
+  if(!validate_user_string(cmd_line)){
+    return -1;
+  }
   char *input = palloc_get_page(0);
   size_t len = strlen(cmd_line) + 1;
   if(input == NULL){
@@ -241,7 +243,9 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
      */
 
     /* printf("System call number: %d\n", args[0]); */
-    validate_user_ptr(f->esp + 0*sizeof(uint32_t));
+    if(!validate_user_buffer(f->esp, sizeof(uint32_t))){
+      sys_exit(-1);
+    }
     if (args[0] == SYS_EXIT) {
         validate_user_ptr(f->esp + 1*sizeof(uint32_t));
         sys_exit(args[1]);
