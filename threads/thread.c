@@ -26,7 +26,7 @@ struct child_status *child_status_create() {
     cs->child_tid = -1;
     cs->exit_code = -1;
     cs->has_exited = false;
-    cs->load_success = false;
+    cs->load_success = true;
 
     cs->ref_count = 2; // One for parent, one for child
     lock_init(&cs->ref_lock);

@@ -226,6 +226,9 @@ int sys_exec(const char *cmd_line){
   strlcpy(input, cmd_line, PGSIZE);
   tid_t child_tid = process_execute(input);
   palloc_free_page(input);
+  if(find_child_status(thread_current(), child_tid)->load_success == false){
+    return -1;
+  }
   return child_tid;
 }
 

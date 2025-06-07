@@ -77,7 +77,6 @@ tid_t process_execute(const char *file_name) {
     sema_down(&sem_load);
 
     list_push_back(&thread_current()->self_to_children, &cs->elem);
-    
     palloc_free_page(file_name_copy);
     return tid;
 }
@@ -99,6 +98,7 @@ static void start_process(void *func_args) {
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
     success = load(file_name_, &if_.eip, &if_.esp);
+    thread_current()->self_to_parent->load_success = success;
     sema_up(cast_args->sem_load);
     
     //if_.esp = PHYS_BASE - 12;
@@ -433,8 +433,10 @@ done:
     /* We arrive here whether the load is successful or not. */
     if(!success && file != NULL){
         file_close(file);
+        thread_current()->self_to_parent->load_success = false;
         thread_current()->exe_file = NULL;
     }
+    thread_current()->self_to_parent->load_success = true;
     return success;
 }
 
