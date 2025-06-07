@@ -206,13 +206,10 @@ static void start_process(void *func_args) {
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int process_wait(tid_t child_tid) {
-  if(child_tid == thread_current()->tid){
-    return 1;
-  }
-  struct child_struct *son = find_child_status(thread_current(), child_tid);
-  /*if(son == NULL){
+  struct child_status *son = find_child_status(thread_current(), child_tid);
+  if(son == NULL){
     return -1;
-    }*/
+  }
   return child_status_wait(son);
 }
 

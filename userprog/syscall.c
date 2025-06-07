@@ -227,6 +227,10 @@ int sys_exec(const char *cmd_line){
   return child;
 }
 
+int sys_wait(tid_t child_tid){
+  return process_wait(child_tid);
+}
+
 void sys_halt(void){
   shutdown_power_off();
 }
@@ -282,7 +286,7 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       }
 
       struct fd_entry *fde = fd_lookup(fd_arg);
-      if(fde = NULL){
+      if(fde == NULL){
         sys_exit(-1);
       }
       f->eax = sys_read(fd_arg, buf, size);
@@ -312,8 +316,13 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
       sys_halt();
     } else if(args[0] == SYS_EXEC){
       validate_user_ptr(f->esp + 1*sizeof(uint32_t));
-      validate_user_string(args[1]);
+      if(!validate_user_string(args[1])){
+        sys_exit(-1);
+      }
       char *cmd = args[1];
       sys_exec(cmd);
+    } else if(args[0] == SYS_WAIT){
+      validate_user_ptr(f->esp + 1*sizeof(uint32_t));
+      sys_wait(args[1]);
     }
 }
