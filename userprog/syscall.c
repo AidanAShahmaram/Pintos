@@ -250,6 +250,9 @@ static void syscall_handler(struct intr_frame *f UNUSED) {
     if(!validate_user_buffer(f->esp, sizeof(uint32_t))){
       sys_exit(-1);
     }
+    if(!validate_user_buffer(f->esp + sizeof(uint32_t), sizeof(uint32_t))){
+      sys_exit(-1);
+    }
     if (args[0] == SYS_EXIT) {
         validate_user_ptr(f->esp + 1*sizeof(uint32_t));
         sys_exit(args[1]);
