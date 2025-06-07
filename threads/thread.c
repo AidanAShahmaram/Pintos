@@ -26,7 +26,8 @@ struct child_status *child_status_create() {
     cs->child_tid = -1;
     cs->exit_code = -1;
     cs->has_exited = false;
-  
+    cs->load_success = false;
+
     cs->ref_count = 2; // One for parent, one for child
     lock_init(&cs->ref_lock);
     sema_init(&cs->exit_sema, 0);
@@ -495,6 +496,7 @@ static void init_thread(struct thread *t, const char *name, int priority) {
 
     list_init(&t->self_to_children);
     t->self_to_parent = NULL;
+    t->exe_file = NULL;
 
     old_level = intr_disable();
     list_push_back(&all_list, &t->allelem);

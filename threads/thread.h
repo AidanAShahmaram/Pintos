@@ -133,11 +133,14 @@ struct thread {
   
   uint32_t *pagedir; /* Page directory. */
   struct list fd_list;
+  struct file *exe_file;
   int next_fd_num;
 
   struct list self_to_children;
   struct child_status *self_to_parent;
+  struct sema *load_complete;
   int exit_status;
+  bool load_success;
 #endif
   
   /* Owned by thread.c. */
@@ -179,5 +182,7 @@ int thread_get_nice(void);
 void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
+
+/* ##################   WE MADE THIS ONE FUNCTION      ###################### */
 
 #endif /* threads/thread.h */

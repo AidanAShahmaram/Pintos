@@ -5,7 +5,7 @@
 
 struct start_proc_args{
   char *file_name;
-  struct child_struct *cs;
+  struct child_status *cs;
   struct semaphore *sem_load;
 };
 

@@ -99,7 +99,8 @@ static void start_process(void *func_args) {
     if_.cs = SEL_UCSEG;
     if_.eflags = FLAG_IF | FLAG_MBS;
     success = load(file_name_, &if_.eip, &if_.esp);
-
+    sema_up(cast_args->sem_load);
+    
     //if_.esp = PHYS_BASE - 12;
 
     /* If load failed, quit. */
@@ -179,11 +180,10 @@ static void start_process(void *func_args) {
 	
     }else{
       palloc_free_page(file_name_);
-      sema_up(cast_args->sem_load);
-        thread_exit();
+      thread_exit();
     }
 
-    sema_up(cast_args->sem_load); 
+    
     
 
     /* Start the user process by simulating a return from an
@@ -233,7 +233,11 @@ void process_exit(void) {
         pagedir_activate(NULL);
         pagedir_destroy(pd);
     }
-    child_status_exit(thread_current()->self_to_parent, thread_current()->exit_status);
+    if(cur->exe_file){
+        file_close(cur->exe_file);
+        cur->exe_file = NULL;
+    }
+    child_status_exit(cur->self_to_parent, cur->exit_status);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -352,6 +356,8 @@ bool load(const char *file_name, void (**eip)(void), void **esp) {
         printf("load: %s: open failed\n", file_name);
         goto done;
     }
+    file_deny_write(file);
+    thread_current()->exe_file = file;
 
     /* Read and verify executable header. */
     if (file_read(file, &ehdr, sizeof ehdr) != sizeof ehdr ||
@@ -425,7 +431,10 @@ bool load(const char *file_name, void (**eip)(void), void **esp) {
 
 done:
     /* We arrive here whether the load is successful or not. */
-    file_close(file);
+    if(!success && file != NULL){
+        file_close(file);
+        thread_current()->exe_file = NULL;
+    }
     return success;
 }
 

@@ -10,6 +10,7 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 #include "userprog/pagedir.h"
+#include "filesys/directory.h"
 
 static struct lock filesys_lock;
 
@@ -223,8 +224,9 @@ int sys_exec(const char *cmd_line){
     return -1;
   }
   strlcpy(input, cmd_line, PGSIZE);
-  tid_t child = process_execute(input);
-  return child;
+  tid_t child_tid = process_execute(input);
+  palloc_free_page(input);
+  return child_tid;
 }
 
 int sys_wait(tid_t child_tid){
